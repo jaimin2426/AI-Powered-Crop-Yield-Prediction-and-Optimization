@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriPredict - AI-Powered Crop Yield Prediction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-green: #2E7D32;
+            --secondary-green: #4CAF50;
+            --accent-gold: #FFD700;
+            --earth-brown: #8D6E63;
+            --sky-blue: #87CEEB;
+        }
+        .gradient-bg1 {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+          
+        }
+        .gradient-bg {
+        background: linear-gradient(-45deg, #16a34a, #22c55e, #15803d, #4ade80);
+        background-size: 400% 400%;
+        animation: gradientBG 10s ease infinite;
+        }
+
+        @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+        }
+
+        .crop-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .crop-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        .prediction-gauge {
+            background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+        }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #10b981;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+        }
+        .image-preview {
+            max-width: 100%;
+            max-height: 200px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+        .chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        .chatbot-header {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background: #f8fafc;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background: #10b981;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+        .bot-message {
+            background: #e5e7eb;
+            color: #374151;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 0 0 12px 12px;
+        }
+        .chat-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+        }
+        .typing-indicator {
+            display: flex;
+            padding: 10px;
+            background: #e5e7eb;
+            border-radius: 18px;
+            margin-bottom: 15px;
+            width: fit-content;
+        }
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #6b7280;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+        .voice-recording {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .faq-item {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 15px 0;
+        }
+        .faq-question {
+            width: 100%;
+            text-align: left;
+            padding: 10px 0;
+            background: none;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .faq-answer {
+            padding: 10px 0;
+            color: #6b7280;
+            display: none;
+        }
+        .faq-answer.show {
+            display: block;
+        }
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .weather-card {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .market-price-card {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .forum-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: transform 0.2s ease;
+        }
+        .forum-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #10b981;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .logo-leaf {
+            width: 80px;
+            height: 80px;
+            background: var(--accent-gold);
+            border-radius: 50% 0 50% 50%;
+            transform: rotate(45deg);
+            position: relative;
+            margin: 0 auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .logo-leaf::before {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: var(--primary-green);
+            border-radius: 50%;
+            top: 10px;
+            left: 10px;
+        }
+        
+        .logo-ai-pulse {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 30px;
+            left: 30px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .prediction-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary-green);
+        }
+        
+        .prediction-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(46, 125, 50, 0.15);
+        }
+        
+        .crop-health-indicator {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .health-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+        
+        .weather-widget {
+            background: linear-gradient(135deg, #87CEEB 0%, #E3F2FD 100%);
+            border-radius: 15px;
+        }
+        
+        .soil-moisture-gauge {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(var(--secondary-green) 0% var(--percentage, 0%), #e0e0e0 var(--percentage, 0%) 100%);
+            position: relative;
+        }
+        
+        .gauge-center {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--primary-green);
+        }
+        
+        .ai-recommendation {
+            border-left: 4px solid var(--accent-gold);
+            background: linear-gradient(135deg, #FFF9C4 0%, #FFFFFF 100%);
+        }
+        
+        .animated-bg {
+            animation: gradientShift 8s ease infinite;
+            background: linear-gradient(-45deg, #4CAF50, #2E7D32, #8BC34A, #CDDC39);
+            background-size: 400% 400%;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .crop-progress-ring {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(var(--primary-green) 0% var(--progress, 0%), #e0e0e0 var(--progress, 0%) 100%);
+            position: relative;
+        }
+        
+        .progress-center {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: white;
+            border-radius: 50%;
+            top: 15px;
+            left: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .sensor-data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .prediction-timeline {
+            border-left: 3px solid var(--primary-green);
+            padding-left: 1.5rem;
+            margin-left: 0.5rem;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: var(--primary-green);
+            border-radius: 50%;
+            left: -2.4rem;
+            top: 0.5rem;
+        }
+        .logo{
+            height: 100px;
+            height: 100px;
+        }
+        #splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #4CAF50, #2E7D32, #8BC34A, #CDDC39);
+      background-size: 400% 400%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      animation: fadeOut 2s ease forwards;
+      animation-delay: 3s; /* wait 3s then fade */
+    }
+
+    /* Logo animation (pulse + zoom) */
+    #splash img {
+      width: 300px;
+      height: 300px;
+      animation: pulse 1.9s infinite, zoomIn 2s ease;
+    }
+
+    /* Background gradient shift */
+    @keyframes gradientShift {
+      0% { background-position: 0% 30%; }
+      30% { background-position: 30% 50%; }
+      50% { background-position: 50% 70%; }
+      70% { background-position: 70% 100%; }
+      100% { background-position: 100% 70%; }
+      70% { background-position: 70% 50%; }
+    }
+
+    /* Pulse animation */
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Zoom in (initial load) */
+    @keyframes zoomIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Fade out splash */
+    @keyframes fadeOut {
+      0% { opacity: 1; visibility: visible; }
+      100% { opacity: 0; visibility: hidden; }
+    }
+    .logo-container {
+  display: flex;
+  align-items: center;  /* keeps logo + text aligned */
+  justify-content: center; /* centers them together */
+  gap: 10px; /* small space between logo & name */
+}
+
+.logo {
+  width: 80px;   /* adjust size */
+  height: auto;
+}
+
+.logo-text {
+  font-size: 22px;   /* adjust text size */
+  font-weight: bold;
+  color: white;   /* or your theme color */
+}
+.custom-select {
+  background-color: #2faa81; /* Green */
+  color: white;              /* White text */
+  border: 1px solid white;   /* White border */
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+
+/* Dropdown options */
+.custom-select option {
+  background-color: #0a584e; /* Green dropdown */
+  color: white;              /* White text */
+}
+    </style>
+    </head>
+<body class="bg-gray-50 font-sans">
+    <!--splash-->
+    <div id="splash">
+    <img src="logo.jpg" alt="Logo">
+  </div>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close float-right text-2xl cursor-pointer">&times;</span>
+            <h2 class="text-2xl font-bold mb-6 text-center text-green-600">Login to AgriPredict</h2>
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Enter your email" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:opacity-90">
+                    Login
+                </button>
+                <p class="text-center mt-4 text-sm text-gray-600">
+                    Don't have an account? <a href="#" class="text-green-600 hover:underline">Sign up</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="modal">
+        <div class="modal-content">
+            <span class="close-notification float-right text-2xl cursor-pointer">&times;</span>
+            <h2 class="text-2xl font-bold mb-6 text-center text-green-600">Notifications</h2>
+            <div id="notificationList" class="space-y-3">
+                <!-- Notifications will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Toggle Button -->
+    <div class="chat-toggle" id="chatbotToggle">
+        <i class="fas fa-comments text-xl"></i>
+    </div>
+
+    <!-- Chatbot Container -->
+    <div class="chatbot-container hidden" id="chatbotContainer">
+        <div class="chatbot-header">
+            <h3 class="font-semibold">AgriPredict Assistant</h3>
+            <button id="closeChatbot" class="text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="bot-message message">
+                Hello! I'm your AgriPredict assistant. How can I help you with your crops today?
+            </div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="chatInput" placeholder="Type your question..." class="flex-1 border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+            <button id="voiceBtn" class="bg-gray-200 px-4 py-2 hover:bg-gray-300">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button id="sendBtn" class="gradient-bg text-white px-4 py-2 rounded-r-lg hover:opacity-90">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+    <!-- Header -->
+    <header class="gradient-bg1 text-white">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex justify-between items-center">
+                <div class="logo-container">
+                    <button>
+                    <img src="logo.jpg" alt="AgriPredict AI" class="logo" title="Welcome to AgriPredict AI"></button>
+                    <span class="logo-text">AgriPredict AI</span>
+                    
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Language Selector -->
+                    <select id="languageSelect" class="custom-select text-white border border-white rounded px-3 py-1">
+                        <option class="text-black" value="en">English</option>
+                        <option class="text-black" value="hi">Hindi</option>
+                        <option class="text-black" value="ta">Tamil</option>
+                        <option class="text-black" value="te">Telugu</option>
+                        <option class="text-black" value="kn">Kannada</option>
+                        <option class="text-black" value="ml">Malayalam</option>
+                        <option class="text-black" value="bn">Bengali</option>
+                        <option class="text-black" value="mr">Marathi</option>
+                        <option class="text-black" value="gu">Gujarati</option>
+                        <option class="text-black" value="pa">Punjabi</option>
+                    </select>
+                    
+                    
+                    <!-- Notification Bell -->
+                    <div class="notification-bell" id="notificationBell">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="notification-badge hidden" id="notificationBadge">3</span>
+                    </div>
+                    
+                    <!-- Login Button -->
+                     <a href="login.html">
+                    <button id="loginBtn" class="bg-white text-green-600 px-4 py-2 rounded-lg font-semibold hover:bg-green-50">
+                        Login
+                    </button></a>
+                    
+                    <nav class="hidden md:block">
+                        <ul class="flex space-x-6">
+                            <li><a href="#" class="hover:text-green-100">Home</a></li>
+                            <li><a href="#" class="hover:text-green-100">Features</a></li>
+                            <li><a href="#" class="hover:text-green-100">About</a></li>
+                            <li><a href="#" class="hover:text-green-100">Contact</a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative">
+        <div class="gradient-bg py-20">
+            <div class="container mx-auto px-4 text-center text-white">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6 ">Revolutionizing Agriculture with AI</h2>
+                <p class="text-xl mb-8 max-w-4xl mx-auto">
+                    Smart farming with AI — higher productivity, lower risks, sustainable future
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <button onclick="scrollToForm()" class="bg-white text-green-600 px-8 py-3 rounded-full font-semibold hover:bg-green-50 transition duration-300">
+                        Predict Yield
+                    </button>
+                    <button onclick="scrollToScanner()" class="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-green-600 transition duration-300">
+                        Scan Crop Image
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+    </section>
+    <section class="flex justify-center mt-10">
+    <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-6xl mx-4">
+    <div class="grid md:grid-cols-4 gap-6">
+      <div class="text-center">
+        <i class="fas fa-brain text-4xl text-green-600 mb-3"></i>
+        <h3 class="font-bold text-lg mb-2">AI-Powered Analysis</h3>
+        <p class="text-gray-600">Advanced machine learning algorithms analyze multiple environmental factors</p>
+      </div>
+      <div class="text-center">
+        <i class="fas fa-chart-line text-4xl text-green-600 mb-3"></i>
+        <h3 class="font-bold text-lg mb-2">Yield Prediction</h3>
+        <p class="text-gray-600">Accurate predictions based on historical data and real-time conditions</p>
+      </div>
+      <div class="text-center">
+        <i class="fas fa-lightbulb text-4xl text-green-600 mb-3"></i>
+        <h3 class="font-bold text-lg mb-2">Optimization Tips</h3>
+        <p class="text-gray-600">Personalized recommendations to maximize your crop yield potential</p>
+      </div>
+      <div class="text-center">
+        <i class="fas fa-camera text-4xl text-green-600 mb-3"></i>
+        <h3 class="font-bold text-lg mb-2">Image Analysis</h3>
+        <p class="text-gray-600">Upload crop images for instant disease detection and health assessment</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Main Content -->
+    <main class="pt-32 pb-20">
+        <div class="container mx-auto px-4">
+            <!-- Real-time Weather & Market Prices -->
+            <section class="mb-16">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Weather Widget -->
+            <div class="weather-widget p-6 col-span-1">
+                <h3 class="text-2xl font-semibold mb-4 text-blue-800">Weather Forecast</h3>
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-sun text-yellow-500 text-4xl mr-4"></i>
+                    <div>
+                        <p class="text-3xl font-bold">28°C</p>
+                        <p class="text-gray-600">Sunny with clouds</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Tomorrow</p>
+                        <i class="fas fa-cloud-sun text-blue-500 text-xl"></i>
+                        <p class="font-semibold">26°C</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Wed</p>
+                        <i class="fas fa-cloud-rain text-blue-700 text-xl"></i>
+                        <p class="font-semibold">22°C</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Thu</p>
+                        <i class="fas fa-sun text-yellow-500 text-xl"></i>
+                        <p class="font-semibold">27°C</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Market Prices Widget -->
+                    <div class="market-price-card">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-xl font-semibold mb-2">Market Prices</h3>
+                                <p class="text-lg">Latest commodity prices</p>
+                                <div class="mt-4 space-y-2">
+                                    <div class="flex justify-between">
+                                        <span>Wheat</span>
+                                        <span>₹2,100/qtl</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Rice</span>
+                                        <span>₹2,800/qtl</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Corn</span>
+                                        <span>₹1,800/qtl</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-4xl">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button onclick="viewMarketTrends()" class="bg-white text-orange-600 px-4 py-2 rounded-lg text-sm hover:bg-orange-50">
+                                <i class="fas fa-chart-line mr-2"></i>View Trends
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+<!-- Image Scanner Section -->
+            <section id="image-scanner" class="mb-16">
+                <div class="bg-white rounded-2xl shadow-xl p-8">
+                    <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">Crop Image Analysis</h2>
+                    <p class="text-center text-gray-600 mb-8 max-w-2xl mx-auto">
+                        Upload images of your crops for instant AI-powered analysis. Our system can detect diseases, 
+                        assess plant health, and provide recommendations for treatment and care.
+                    </p>
+                    
+                    <div class="grid md:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <div class="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                                <p class="text-gray-600 mb-4">Upload crop images for analysis</p>
+                                <input type="file" id="cropImage" accept="image/*" class="hidden">
+                                <label for="cropImage" class="gradient-bg text-white px-6 py-3 rounded-lg cursor-pointer hover:opacity-90">
+                                    Choose Image
+                                </label>
+                                <div id="imagePreview" class="mt-4 hidden">
+                                    <img src="" alt="Uploaded crop image preview" class="image-preview mx-auto">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-xl font-semibold mb-4 text-green-600">Analysis Results</h3>
+                            <div id="scanResults" class="bg-gray-50 p-6 rounded-lg">
+                                <p class="text-gray-600 text-center">Upload an image to see analysis results</p>
+                            </div>
+                            <button id="analyzeBtn" class="gradient-bg text-white px-6 py-3 rounded-lg mt-4 w-full hidden">
+                                Analyze Image
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- Prediction Form Section -->
+<section id="prediction-form" class="mb-16">
+  <div class="bg-white rounded-2xl shadow-xl p-8">
+    <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">
+      Crop Yield Prediction
+    </h2>
+
+    <form id="cropForm" class="grid md:grid-cols-2 gap-6">
+      <!-- Left Column -->
+      <div class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Crop Type</label>
+          <select name="cropType"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            required>
+            <option value="">Select Crop Type</option>
+            <option value="wheat">Wheat</option>
+            <option value="corn">Corn</option>
+            <option value="rice">Rice</option>
+            <option value="soybean">Soybean</option>
+            <option value="cotton">Cotton</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Soil Type</label>
+          <select name="soilType"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            required>
+            <option value="">Select Soil Type</option>
+            <option value="loamy">Loamy Soil</option>
+            <option value="sandy">Sandy Soil</option>
+            <option value="clay">Clay Soil</option>
+            <option value="silty">Silty Soil</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Rainfall (mm)</label>
+          <input type="number" name="rainfall" min="0" max="2000"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            placeholder="Enter rainfall in mm" required>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Temperature (°C)</label>
+          <input type="number" name="temperature" min="-10" max="50"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            placeholder="Enter temperature" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Fertilizer Used (kg/ha)</label>
+          <input type="number" name="fertilizerUsed" min="0" max="500"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            placeholder="Enter fertilizer amount" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Farm Size (hectares)</label>
+          <input type="number" name="farmSize" min="0" max="10000"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            placeholder="Enter farm size" required>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Irrigation Type</label>
+          <select name="irrigation"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+            <option value="drip">Drip Irrigation</option>
+            <option value="sprinkler">Sprinkler System</option>
+            <option value="flood">Flood Irrigation</option>
+            <option value="rainfed">Rain-fed</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Full Width Submit Button -->
+      <div class="md:col-span-2 text-center">
+        <button type="submit"
+          class="gradient-bg text-white px-8 py-4 rounded-lg font-semibold hover:opacity-90 transition duration-300">
+          Predict Yield & Optimize
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+            <!-- Results Section -->
+    <section id="results" class="hidden mb-16">
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+    <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">
+        Prediction Results
+    </h2>
+
+    <!-- Predict Yield (Centered) -->
+    <div class="text-center mb-12">
+      <h3 class="text-2xl font-semibold mb-4 text-green-600">Predicted Yield</h3>
+      <div class="prediction-gauge h-8 rounded-full mb-4 relative">
+        <div id="yieldGauge"
+          class="h-full rounded-full bg-green-500 w-0 transition-all duration-1000"></div>
+      </div>
+      <p id="predictedYield" class="text-4xl font-bold text-gray-800 mb-2">-- tons/ha</p>
+      <p class="text-gray-600">Based on your input data</p>
+    </div>
+
+    <!-- Two Column Layout: Soil Health + Crop Progress -->
+    <div class="grid md:grid-cols-2 gap-8">
+      <!-- Soil Health -->
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-2xl font-semibold mb-4 text-gray-800">Soil Health Analysis</h3>
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm font-medium">Moisture Level</span>
+              <span class="text-sm font-semibold text-green-600">78%</span>
+            </div>
+            <div class="crop-health-indicator">
+              <div class="health-bar bg-green-500" style="width: 78%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm font-medium">Nutrient Balance</span>
+              <span class="text-sm font-semibold text-yellow-600">65%</span>
+            </div>
+            <div class="crop-health-indicator">
+              <div class="health-bar bg-yellow-500" style="width: 65%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm font-medium">pH Level</span>
+              <span class="text-sm font-semibold text-green-600">6.8</span>
+            </div>
+            <div class="crop-health-indicator">
+              <div class="health-bar bg-blue-500" style="width: 68%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-6 text-center">
+          <div class="soil-moisture-gauge mx-auto" style="--percentage: 78%">
+            <div class="gauge-center">78%</div>
+          </div>
+          <p class="text-sm text-gray-600 mt-2">Overall Soil Health</p>
+        </div>
+      </div>
+
+      <!-- Crop Progress -->
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-2xl font-semibold mb-4 text-gray-800">Crop Progress</h3>
+        <div class="grid grid-cols-2 gap-6 mb-6">
+          <div class="text-center">
+            <div class="crop-progress-ring mx-auto" style="--progress: 65%">
+              <div class="progress-center">65%</div>
+            </div>
+            <p class="text-sm font-medium mt-2">Corn Field A</p>
+          </div>
+          <div class="text-center">
+            <div class="crop-progress-ring mx-auto" style="--progress: 42%">
+              <div class="progress-center">42%</div>
+            </div>
+            <p class="text-sm font-medium mt-2">Wheat Field B</p>
+          </div>
+        </div>
+        <div class="bg-green-50 p-4 rounded-lg">
+          <div class="flex items-center">
+            <i class="fas fa-seedling text-green-600 text-xl mr-3"></i>
+            <div>
+              <p class="font-semibold text-green-800">Growth Rate: +2.3% daily</p>
+              <p class="text-sm text-green-600">Optimal conditions maintained</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+        <!-- Predictions Section -->
+        <section id="predictions" class="mb-16">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8">AI Predictions & Analytics</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Yield Prediction -->
+                <div class="prediction-card bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-chart-line text-green-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">Yield Prediction</h3>
+                            <p class="text-sm text-gray-600">Next 30 days forecast</p>
+                        </div>
+                    </div>
+                    
+                    <div class="prediction-timeline mt-6">
+                        <div class="timeline-item">
+                            <h4 class="font-semibold text-green-700">Week 1</h4>
+                            <p class="text-sm text-gray-600">Expected growth: 15-20%</p>
+                            <p class="text-xs text-green-600">Optimal conditions</p>
+                        </div>
+                        <div class="timeline-item">
+                            <h4 class="font-semibold text-green-700">Week 2</h4>
+                            <p class="text-sm text-gray-600">Expected growth: 25-30%</p>
+                            <p class="text-xs text-green-600">Peak growth period</p>
+                        </div>
+                        <div class="timeline-item">
+                            <h4 class="font-semibold text-green-700">Week 3-4</h4>
+                            <p class="text-sm text-gray-600">Maturation phase</p>
+                            <p class="text-xs text-green-600">Harvest preparation</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-green-50 rounded-lg">
+                        <p class="font-semibold text-green-800">
+                            <i class="fas fa-lightbulb mr-2"></i>
+                            Predicted Yield: 8.2 tons/acre (±0.3)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Risk Assessment -->
+                <div class="prediction-card bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold">Risk Assessment</h3>
+                            <p class="text-sm text-gray-600">Potential threats analysis</p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-bug text-red-500 mr-3"></i>
+                                <span>Pest Risk</span>
+                            </div>
+                            <span class="text-red-600 font-semibold">Low (15%)</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-cloud-rain text-yellow-500 mr-3"></i>
+                                <span>Drought Risk</span>
+                            </div>
+                            <span class="text-yellow-600 font-semibold">Medium (35%)</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-wind text-green-500 mr-3"></i>
+                                <span>Storm Risk</span>
+                            </div>
+                            <span class="text-green-600 font-semibold">Low (10%)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                        <p class="text-sm text-blue-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Overall risk level: Moderate. Monitor weather patterns closely.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Optimization Tips -->
+                        <div>
+    <!-- Optimization Suggestions -->
+    <div class="max-w-6xl mx-auto px-4">
+  <h3 class="text-2xl font-semibold mb-4 text-green-600">Optimization Suggestions</h3>
+
+  <!-- Input Card -->
+  <div class="bg-white shadow-lg rounded-2xl p-6 mb-6">
+    <h4 class="font-semibold text-lg mb-4">Enter Your Data</h4>
+
+    <form id="optimizationForm" class="space-y-4">
+      <div>
+        <label class="block font-medium">🌾 Crop Type:</label>
+        <input type="text" id="cropType" class="border rounded-lg p-2 w-full" placeholder="e.g. Wheat, Rice">
+      </div>
+
+      <div>
+        <label class="block font-medium">📏 Field Area (in acres):</label>
+        <input type="number" id="fieldArea" class="border rounded-lg p-2 w-full" placeholder="Enter area">
+      </div>
+
+      <div>
+        <label class="block font-medium">💧 Soil Moisture (%):</label>
+        <input type="number" id="soilMoisture" class="border rounded-lg p-2 w-full" placeholder="Enter soil moisture">
+      </div>
+
+      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+        Get Suggestions
+      </button>
+    </form>
+  </div>
+
+  <!-- Output Card -->
+  <div id="optimizationOutput" class="hidden bg-white shadow-lg rounded-2xl p-6">
+    <h4 class="font-semibold text-lg mb-4">🌟 Your AI Suggestions</h4>
+    <div id="suggestionList" class="space-y-2"></div>
+  </div>
+</div>
+
+<script>
+document.getElementById("optimizationForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  // Get inputs
+  const crop = document.getElementById("cropType").value;
+  const area = document.getElementById("fieldArea").value;
+  const moisture = document.getElementById("soilMoisture").value;
+
+  // Example suggestions
+  let suggestions = [];
+  if (moisture < 30) {
+    suggestions.push("💧 Increase irrigation for better yield.");
+  } else {
+    suggestions.push("✅ Soil moisture is sufficient for now.");
+  }
+
+  if (area > 5) {
+    suggestions.push("⚡ Consider using automated irrigation for large field size.");
+  }
+
+  if (crop.toLowerCase() === "wheat") {
+    suggestions.push("🌾 Apply nitrogen-rich fertilizer at early growth stage.");
+  }
+
+  // Show output
+  const output = document.getElementById("optimizationOutput");
+  output.classList.remove("hidden");
+
+  const list = document.getElementById("suggestionList");
+  list.innerHTML = "";
+  suggestions.forEach(s => {
+    let card = document.createElement("div");
+    card.className = "p-4 bg-green-50 border-l-4 border-green-600 rounded-lg";
+    card.innerText = s;
+    list.appendChild(card);
+  });
+});
+</script>
+
+
+    <!-- Detailed Analysis -->
+    <div class="max-w-6xl mx-auto px-4 mt-8 pt-6 border-t border-gray-200">
+        <h3 class="text-xl font-semibold mb-4 text-gray-800">Detailed Analysis</h3>
+        <div id="detailedAnalysis" class="text-gray-600">
+            Submit the form to see detailed analysis of your crop yield potential
+        </div>
+    </div>
+
+    <!-- AI Recommendations -->
+    <section class="mb-16">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8">AI Recommendations</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="ai-recommendation p-6 rounded-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-tint text-green-600"></i>
+                        </div>
+                        <h3 class="font-semibold">Irrigation Schedule</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">
+                        Adjust watering to 2x daily (6AM & 6PM) for optimal moisture levels.
+                    </p>
+                    <button class="text-green-600 text-sm font-semibold hover:text-green-800">
+                        Apply Recommendation →
+                    </button>
+                </div>
+
+                <div class="ai-recommendation p-6 rounded-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-prescription-bottle text-blue-600"></i>
+                        </div>
+                        <h3 class="font-semibold">Nutrient Boost</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">
+                        Add nitrogen-rich fertilizer to Field B to improve growth rate by 15%.
+                    </p>
+                    <button class="text-green-600 text-sm font-semibold hover:text-green-800">
+                        Apply Recommendation →
+                    </button>
+                </div>
+
+                <div class="ai-recommendation p-6 rounded-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-calendar-alt text-purple-600"></i>
+                        </div>
+                        <h3 class="font-semibold">Harvest Timing</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">
+                        Optimal harvest window: September 15-22 for maximum yield quality.
+                    </p>
+                    <button class="text-green-600 text-sm font-semibold hover:text-green-800">
+                        Schedule Harvest →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Progress Tracking Section -->
+    <section class="mb-16">
+        <div class="max-w-6xl mx-auto px-4 bg-white rounded-2xl shadow-xl p-8">
+            <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">Crop Progress Tracking</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-seedling text-3xl text-green-600"></i>
+                    </div>
+                    <h3 class="font-semibold mb-2">Planting Stage</h3>
+                    <p class="text-gray-600 mb-3">Track your planting progress</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 100%"></div>
+                    </div>
+                    <span class="text-sm text-gray-500 mt-1">Completed</span>
+                </div>
+
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-tint text-3xl text-blue-600"></i>
+                    </div>
+                    <h3 class="font-semibold mb-2">Growth Stage</h3>
+                    <p class="text-gray-600 mb-3">Monitor crop development</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 65%"></div>
+                    </div>
+                    <span class="text-sm text-gray-500 mt-1">65% Complete</span>
+                </div>
+
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-harvest text-3xl text-yellow-600"></i>
+                    </div>
+                    <h3 class="font-semibold mb-2">Harvest Stage</h3>
+                    <p class="text-gray-600 mb-3">Prepare for harvest</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 15%"></div>
+                    </div>
+                    <span class="text-sm text-gray-500 mt-1">15% Complete</span>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <button onclick="viewDetailedProgress()" class="gradient-bg text-white px-6 py-3 rounded-lg hover:opacity-90">
+                    <i class="fas fa-chart-line mr-2"></i>View Detailed Progress
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community Forum Section -->
+    <section class="mb-16">
+        <div class="max-w-6xl mx-auto px-4 bg-white rounded-2xl shadow-xl p-8">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800">Community Forum</h2>
+                <button onclick="createNewPost()" class="gradient-bg text-white px-6 py-3 rounded-lg hover:opacity-90">
+                    <i class="fas fa-plus mr-2"></i>New Post
+                </button>
+            </div>
+
+            <div class="space-y-4" id="forumPosts">
+                <!-- Forum posts will be loaded from backend -->
+            </div>
+
+            <div class="text-center mt-6">
+                <button onclick="loadMorePosts()" class="text-green-600 hover:text-green-700 font-semibold">
+                    <i class="fas fa-arrow-down mr-2"></i>Load More Posts
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq-section" class="mb-16">
+        <div class="max-w-6xl mx-auto px-4 bg-white rounded-2xl shadow-xl p-8">
+            <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">Frequently Asked Questions</h2>
+            <div class="mb-6">
+                <input type="text" id="faqSearch" placeholder="Search FAQs..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+            </div>
+            <div id="faqContainer" class="space-y-4">
+                <!-- FAQ items will be populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="mb-16">
+        <div class="max-w-6xl mx-auto px-4 bg-white rounded-2xl shadow-xl p-8">
+            <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">About AgriPredict AI</h2>
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div>
+                    <img src="image.jpg" alt="Modern agricultural technology" class="w-full rounded-lg">
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-4 text-green-600">Transforming Agriculture with AI</h3>
+                    <p class="text-gray-600 mb-4">
+                        AgriPredict is a comprehensive AI-powered platform designed to revolutionize modern agriculture. 
+                        Our system combines satellite imagery, weather data, soil analysis, and machine learning algorithms 
+                        to provide farmers with actionable insights.
+                    </p>
+                    <p class="text-gray-600 mb-4">
+                        We support sustainable farming practices while respecting cultural and religious considerations 
+                        in agricultural decision-making. Our platform is available in multiple languages to serve farmers 
+                        worldwide.
+                    </p>
+                    <div class="grid grid-cols-2 gap-4 mt-6">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">95%</div>
+                            <div class="text-sm text-gray-600">Prediction Accuracy</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">50+</div>
+                            <div class="text-sm text-gray-600">Crop Types</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">25k+</div>
+                            <div class="text-sm text-gray-600">Farmers Served</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600">10+</div>
+                            <div class="text-sm text-gray-600">Languages</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Crop Examples -->
+    <section class="mb-16">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-8 text-gray-800">Supported Crops</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Wheat Card -->
+                <div class="crop-card bg-white rounded-xl shadow-md p-6">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/d75be20b-e38a-4345-a8fe-317ec42a8edb.png" alt="Golden wheat field" class="w-full h-48 object-cover rounded-lg mb-4">
+                    <h3 class="text-xl font-semibold mb-2">Wheat</h3>
+                    <p class="text-gray-600 mb-4">Optimal conditions: 15-25°C, 500-800mm rainfall, loamy soil</p>
+                    <div class="flex justify-between text-sm text-gray-500">
+                        <span>Yield: 3-8 tons/ha</span>
+                        <span>Season: Winter/Spring</span>
+                    </div>
+                </div>
+
+                <!-- Corn Card -->
+                <div class="crop-card bg-white rounded-xl shadow-md p-6">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/24a4d659-f642-4710-a957-62191fcbafdb.png" alt="Corn field" class="w-full h-48 object-cover rounded-lg mb-4">
+                    <h3 class="text-xl font-semibold mb-2">Corn</h3>
+                    <p class="text-gray-600 mb-4">Optimal conditions: 18-27°C, 600-1000mm rainfall, well-drained soil</p>
+                    <div class="flex justify-between text-sm text-gray-500">
+                        <span>Yield: 8-12 tons/ha</span>
+                        <span>Season: Summer</span>
+                    </div>
+                </div>
+
+                <!-- Rice Card -->
+                <div class="crop-card bg-white rounded-xl shadow-md p-6">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/0f22386f-05aa-4671-b70b-faed949897f7.png" alt="Rice paddies" class="w-full h-48 object-cover rounded-lg mb-4">
+                    <h3 class="text-xl font-semibold mb-2">Rice</h3>
+                    <p class="text-gray-600 mb-4">Optimal conditions: 20-35°C, 1000-2000mm rainfall, clay soil</p>
+                    <div class="flex justify-between text-sm text-gray-500">
+                        <span>Yield: 4-10 tons/ha</span>
+                        <span>Season: Rainy</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">AgriPredict AI</h3>
+                    <p class="text-gray-400">Transforming agriculture through artificial intelligence and data-driven insights.</p>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Home</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Features</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Pricing</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Resources</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Blog</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Documentation</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">API</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Support</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Connect With Us</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-facebook text-xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter text-xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-linkedin text-xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-instagram text-xl"></i></a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>© 2024 AgriPredict AI. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ==================== BACKEND SIMULATION ====================
+        // This simulates a backend API with mock data
+        const backendAPI = {
+            baseURL: 'https://api.agripredict.com', // Replace with your actual backend URL
+            
+            // Translation API
+            async getTranslations(lang) {
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                const translations = {
+                    en: {
+                        welcome: "Welcome to AgriPredict",
+                        faq: "Frequently Asked Questions",
+                        predict: "Predict Yield",
+                        scan: "Scan Crop Image",
+                        // Add more translations as needed
+                    },
+                    hi: {
+                        welcome: "AgriPredict में आपका स्वागत है",
+                        faq: "अक्सर पूछे जाने वाले प्रश्न",
+                        predict: "उपज की भविष्यवाणी करें",
+                        scan: "फसल छवि स्कैन करें",
+                    },
+                    // Add more languages...
+                };
+                
+                return translations[lang] || translations.en;
+            },
+            
+            // FAQ API
+            async getFAQs(lang, search = '') {
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                const faqs = {
+                    en: [
+                        { q: "How to check crop prices?", a: "You can check crop prices in the Market Prices section." },
+                        { q: "How to apply for government schemes?", a: "Visit the Schemes page for detailed instructions." },
+                        { q: "What is the best time to plant wheat?", a: "The optimal time for wheat planting is between October and November." },
+                        { q: "How often should I water my crops?", a: "Watering frequency depends on soil type and weather conditions." },
+                    ],
+                    hi: [
+                        { q: "फसल की कीमत कैसे जांचें?", a: "आप मार्केट प्राइस सेक्शन में फसल की कीमत देख सकते हैं।" },
+                        { q: "सरकारी योजनाओं के लिए आवेदन कैसे करें?", a: "विस्तृत निर्देशों के लिए योजनाओं के पृष्ठ पर जाएं।" },
+                    ],
+                    // Add more languages...
+                };
+                
+                const langFAQs = faqs[lang] || faqs.en;
+                if (!search) return langFAQs;
+                
+                return langFAQs.filter(faq => 
+                    faq.q.toLowerCase().includes(search.toLowerCase()) || 
+                    faq.a.toLowerCase().includes(search.toLowerCase())
+                );
+            },
+            
+            // Chatbot API
+            async sendToChatbot(message, lang) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                const responses = {
+                    en: {
+                        "hello": "Hello! How can I help you with your crops today?",
+                        "weather": "The current weather is sunny with 28°C. Perfect for most crops!",
+                        "pest": "For pest control, I recommend neem oil spray or consulting our disease detection tool.",
+                        "default": "I can help you with crop advice, weather information, and market prices. What would you like to know?"
+                    },
+                    hi: {
+                        "hello": "नमस्ते! मैं आपकी फसलों में आज कैसे मदद कर सकता हूँ?",
+                        "weather": "मौसम अच्छा है, 28°C और धूप है। ज्यादातर फसलों के लिए बढ़िया!",
+                        "default": "मैं आपकी फसल सलाह, मौसम जानकारी और बाजार कीमतों में मदद कर सकता हूं। आप क्या जानना चाहेंगे?"
+                    }
+                };
+                
+                const langResponses = responses[lang] || responses.en;
+                const lowerMessage = message.toLowerCase();
+                
+                for (const [key, response] of Object.entries(langResponses)) {
+                    if (lowerMessage.includes(key)) {
+                        return response;
+                    }
+                }
+                
+                return langResponses.default;
+            },
+            
+            // Weather API
+            async getWeather() {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return {
+                    temp: 28,
+                    description: "Sunny",
+                    humidity: 65,
+                    wind: "5 km/h"
+                };
+            },
+            
+            // Market Prices API
+            async getMarketPrices() {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return {
+                    wheat: 2100,
+                    rice: 2800,
+                    corn: 1800,
+                    soybean: 3200
+                };
+            },
+            
+            // Forum API
+            async getForumPosts(page = 1) {
+                await new Promise(resolve => setTimeout(resolve, 600));
+                return [
+                    {
+                        id: 1,
+                        title: "Best organic fertilizers for wheat crops?",
+                        content: "Looking for recommendations on effective organic fertilizers for wheat cultivation in northern regions.",
+                        author: "Farmer123",
+                        date: "2 hours ago",
+                        replies: 12,
+                        views: 45
+                    },
+                    {
+                        id: 2,
+                        title: "Pest control solutions for rice fields",
+                        content: "Dealing with pest infestation in my rice fields. Any organic solutions that work well?",
+                        author: "RiceGrower",
+                        date: "1 day ago",
+                        replies: 8,
+                        views: 67
+                    }
+                ];
+            },
+            
+            // Notifications API
+            async getNotifications() {
+                await new Promise(resolve => setTimeout(resolve, 400));
+                return [
+                    { id: 1, message: "Your crop prediction is ready", read: false, timestamp: "10 minutes ago" },
+                    { id: 2, message: "New market prices available", read: false, timestamp: "1 hour ago" },
+                    { id: 3, message: "Weather alert: Rain expected tomorrow", read: false, timestamp: "2 hours ago" }
+                ];
+            },
+            
+            // Progress Tracking API
+            async getProgressData() {
+                await new Promise(resolve => setTimeout(resolve, 300));
+                return {
+                    planting: 100,
+                    growth: 65,
+                    harvest: 15
+                };
+            },
+            
+            // Yield Prediction API
+            async predictYield(formData) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                const baseYield = {
+                    'wheat': 5.5,
+                    'corn': 9.2,
+                    'rice': 6.8,
+                    'soybean': 3.2,
+                    'cotton': 2.8
+                }[formData.cropType] || 5.0;
+                
+                // Simulate AI prediction based on inputs
+                const rainfallFactor = Math.min(1, formData.rainfall / 800);
+                const tempFactor = Math.max(0.5, Math.min(1, 1 - Math.abs(formData.temperature - 22) / 20));
+                const fertilizerFactor = Math.min(1.2, 0.8 + (formData.fertilizerUsed / 200));
+                
+                const predictedYield = (baseYield * rainfallFactor * tempFactor * fertilizerFactor).toFixed(1);
+                
+                return {
+                    yield: predictedYield,
+                    confidence: 0.85,
+                    factors: {
+                        rainfall: rainfallFactor,
+                        temperature: tempFactor,
+                        fertilizer: fertilizerFactor
+                    }
+                };
+            }
+        };
+
+        // ==================== FRONTEND INTEGRATION ====================
+        let currentLanguage = 'en';
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadTranslations(currentLanguage);
+            await loadFAQs(currentLanguage);
+            await loadForumPosts();
+            await loadNotifications();
+            await loadProgressData();
+            await loadWeather();
+            await loadMarketPrices();
+            
+            // Set up event listeners
+            setupEventListeners();
+        });
+
+        // Language selection
+        document.getElementById('languageSelect').addEventListener('change', async function() {
+            currentLanguage = this.value;
+            await loadTranslations(currentLanguage);
+            await loadFAQs(currentLanguage);
+        });
+
+        // Load translations from backend
+        async function loadTranslations(lang) {
+            try {
+                const translations = await backendAPI.getTranslations(lang);
+                
+                // Update UI elements with translations
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (translations[key]) {
+                        el.textContent = translations[key];
+                    }
+                });
+                
+                console.log('Translations loaded for:', lang);
+            } catch (error) {
+                console.error('Error loading translations:', error);
+            }
+        }
+
+        // Load FAQs from backend
+        async function loadFAQs(lang, searchTerm = '') {
+            try {
+                const faqs = await backendAPI.getFAQs(lang, searchTerm);
+                const container = document.getElementById('faqContainer');
+                container.innerHTML = '';
+                
+                faqs.forEach((faq, i) => {
+                    const faqItem = document.createElement('div');
+                    faqItem.className = 'faq-item';
+                    faqItem.innerHTML = `
+                        <button class="faq-question" aria-expanded="false" aria-controls="faq${i}">
+                            ${faq.q} <span>+</span>
+                        </button>
+                        <div id="faq${i}" class="faq-answer" hidden>${faq.a}</div>
+                    `;
+                    container.appendChild(faqItem);
+                });
+                
+                // Add toggle functionality
+                container.querySelectorAll('.faq-question').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const answer = btn.nextElementSibling;
+                        const expanded = btn.getAttribute('aria-expanded') === 'true';
+                        btn.setAttribute('aria-expanded', !expanded);
+                        answer.hidden = expanded;
+                        btn.querySelector('span').textContent = expanded ? '+' : '-';
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading FAQs:', error);
+            }
+        }
+
+        // Chatbot functionality
+        async function sendMessageToChatbot(message, lang) {
+            try {
+                showTypingIndicator();
+                const reply = await backendAPI.sendToChatbot(message, lang);
+                hideTypingIndicator();
+                return reply;
+            } catch (error) {
+                console.error('Chatbot error:', error);
+                return "Sorry, I'm having trouble connecting right now. Please try again later.";
+            }
+        }
+
+        // Load forum posts from backend
+        async function loadForumPosts() {
+            try {
+                const posts = await backendAPI.getForumPosts();
+                const container = document.getElementById('forumPosts');
+                container.innerHTML = '';
+                
+                posts.forEach(post => {
+                    const postElement = document.createElement('div');
+                    postElement.className = 'forum-card';
+                    postElement.innerHTML = `
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="font-semibold text-lg">${post.title}</h4>
+                            <span class="text-sm text-gray-500">${post.date}</span>
+                        </div>
+                        <p class="text-gray-600 mb-3">${post.content}</p>
+                        <div class="flex justify-between items-center">
+                            <div class="flex space-x-4 text-sm text-gray-500">
+                                <span><i class="fas fa-user mr-1"></i> ${post.author}</span>
+                                <span><i class="fas fa-comments mr-1"></i> ${post.replies} replies</span>
+                                <span><i class="fas fa-eye mr-1"></i> ${post.views} views</span>
+                            </div>
+                            <span class="text-sm text-green-600">Active</span>
+                        </div>
+                    `;
+                    container.appendChild(postElement);
+                });
+            } catch (error) {
+                console.error('Error loading forum posts:', error);
+            }
+        }
+
+        // Load notifications from backend
+        async function loadNotifications() {
+            try {
+                const notifications = await backendAPI.getNotifications();
+                const badge = document.getElementById('notificationBadge');
+                const unreadCount = notifications.filter(n => !n.read).length;
+                
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+                
+                // Update notification modal
+                const notificationList = document.getElementById('notificationList');
+                notificationList.innerHTML = '';
+                
+                notifications.forEach(notification => {
+                    const notificationElement = document.createElement('div');
+                    notificationElement.className = 'p-3 bg-gray-50 rounded-lg';
+                    notificationElement.innerHTML = `
+                        <p class="font-medium">${notification.message}</p>
+                        <p class="text-sm text-gray-500">${notification.timestamp}</p>
+                    `;
+                    notificationList.appendChild(notificationElement);
+                });
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+
+        // Load progress data from backend
+        async function loadProgressData() {
+            try {
+                const progress = await backendAPI.getProgressData();
+                
+                // Update progress bars
+                document.querySelector('[data-progress="planting"]').style.width = `${progress.planting}%`;
+                document.querySelector('[data-progress="growth"]').style.width = `${progress.growth}%`;
+                document.querySelector('[data-progress="harvest"]').style.width = `${progress.harvest}%`;
+                
+                // Update progress labels
+                document.querySelector('[data-label="planting"]').textContent = `${progress.planting}% Complete`;
+                document.querySelector('[data-label="growth"]').textContent = `${progress.growth}% Complete`;
+                document.querySelector('[data-label="harvest"]').textContent = `${progress.harvest}% Complete`;
+            } catch (error) {
+                console.error('Error loading progress data:', error);
+            }
+        }
+
+        // Load weather data from backend
+        async function loadWeather() {
+            try {
+                const weather = await backendAPI.getWeather();
+                document.getElementById('currentWeather').textContent = 
+                    `${weather.temp}°C`, `${weather.description}`;
+            } catch (error) {
+                console.error('Error loading weather:', error);
+            }
+        }
+
+        // Load market prices from backend
+        async function loadMarketPrices() {
+            try {
+                const prices = await backendAPI.getMarketPrices();
+                // Update market price display if needed
+            } catch (error) {
+                console.error('Error loading market prices:', error);
+            }
+        }
+
+        // Yield prediction form submission
+        document.getElementById('cropForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Show loading state
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.innerHTML = '<div class="loading-spinner mx-auto"></div>';
+            submitButton.disabled = true;
+            
+            try {
+                const prediction = await backendAPI.predictYield(data);
+                
+                // Update UI with prediction results
+                document.getElementById('results').classList.remove('hidden');
+                
+                const yieldPercentage = Math.min(100, (prediction.yield / 12) * 100);
+                document.getElementById('yieldGauge').style.width = yieldPercentage + '%';
+                document.getElementById('predictedYield').textContent = prediction.yield + ' tons/ha';
+                
+                // Generate optimization tips
+                const tips = generateOptimizationTips(data, prediction.yield);
+                const tipsContainer = document.getElementById('optimizationTips');
+                tipsContainer.innerHTML = '';
+                
+                tips.forEach(tip => {
+                    const tipElement = document.createElement('div');
+                    tipElement.className = 'flex items-start';
+                    tipElement.innerHTML = `
+                        <i class="fas fa-lightbulb text-yellow-500 mt-1 mr-3"></i>
+                        <p>${tip}</p>
+                    `;
+                    tipsContainer.appendChild(tipElement);
+                });
+                
+                // Detailed analysis
+                document.getElementById('detailedAnalysis').innerHTML = `
+                    <p>Based on your ${data.cropType} crop with ${data.rainfall}mm rainfall and ${data.temperature}°C temperature, 
+                    our AI model predicts optimal yield potential with ${Math.round(prediction.confidence * 100)}% confidence.</p>
+                `;
+                
+            } catch (error) {
+                console.error('Prediction error:', error);
+                alert('Error generating prediction. Please try again.');
+            } finally {
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+            }
+        });
+
+        // Helper functions
+        function showTypingIndicator() {
+            const typing = document.createElement('div');
+            typing.className = 'typing-indicator';
+            typing.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            document.getElementById('chatMessages').appendChild(typing);
+        }
+
+        function hideTypingIndicator() {
+            const typing = document.querySelector('.typing-indicator');
+            if (typing) typing.remove();
+        }
+
+        function appendMessage(sender, text) {
+            const chatMessages = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `${sender}-message message`;
+            msgDiv.textContent = text;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function setupEventListeners() {
+            // Chatbot functionality
+            document.getElementById('sendBtn').addEventListener('click', async () => {
+                const input = document.getElementById('chatInput');
+                const message = input.value.trim();
+                if (!message) return;
+                
+                appendMessage('user', message);
+                input.value = '';
+                
+                const reply = await sendMessageToChatbot(message, currentLanguage);
+                appendMessage('bot', reply);
+            });
+
+            // Voice input
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = currentLanguage === 'hi' ? 'hi-IN' : 'en-US';
+            recognition.interimResults = false;
+
+            document.getElementById('voiceBtn').addEventListener('click', () => {
+                recognition.start();
+                document.getElementById('voiceBtn').classList.add('voice-recording');
+            });
+
+            recognition.onresult = async (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('chatInput').value = transcript;
+                document.getElementById('voiceBtn').classList.remove('voice-recording');
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                document.getElementById('voiceBtn').classList.remove('voice-recording');
+            };
+
+            // FAQ search
+            document.getElementById('faqSearch').addEventListener('input', (e) => {
+                loadFAQs(currentLanguage, e.target.value);
+            });
+
+            // Notification bell
+            document.getElementById('notificationBell').addEventListener('click', () => {
+                document.getElementById('notificationModal').style.display = 'block';
+            });
+
+            // Modal close buttons
+            document.querySelectorAll('.close, .close-notification').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.closest('.modal').style.display = 'none';
+                });
+            });
+
+            // Chatbot toggle
+            document.getElementById('chatbotToggle').addEventListener('click', () => {
+                document.getElementById('chatbotContainer').classList.toggle('hidden');
+            });
+
+            document.getElementById('closeChatbot').addEventListener('click', () => {
+                document.getElementById('chatbotContainer').classList.add('hidden');
+            });
+        }
+
+        // Navigation functions
+        function scrollToForm() {
+            document.getElementById('prediction-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function scrollToScanner() {
+            document.getElementById('image-scanner').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function refreshWeather() {
+            loadWeather();
+        }
+
+        function viewMarketTrends() {
+            alert('Market trends feature coming soon!');
+        }
+
+        function createNewPost() {
+            alert('New post creation feature coming soon!');
+        }
+
+        function loadMorePosts() {
+            alert('Loading more forum posts...');
+        }
+
+        function viewDetailedProgress() {
+            alert('Detailed progress view coming soon!');
+        }
+
+        // Optimization tips generator (kept from previous version)
+        function generateOptimizationTips(data, predictedYield) {
+            const tips = [];
+            const crop = data.cropType;
+            const rainfall = parseFloat(data.rainfall);
+            const temperature = parseFloat(data.temperature);
+            const fertilizer = parseFloat(data.fertilizerUsed);
+            
+            // Rainfall optimization
+            if (rainfall < 400) {
+                tips.push(`Consider irrigation systems. ${crop} requires more water (optimal: 500-800mm)`);
+            } else if (rainfall > 1000) {
+                tips.push(`Implement better drainage. ${crop} may suffer from waterlogging with high rainfall`);
+            }
+            
+            // Temperature optimization
+            if (temperature < 15) {
+                tips.push(`Use cold-resistant varieties or consider greenhouse cultivation for temperature control`);
+            } else if (temperature > 30) {
+                tips.push(`Implement shade systems and ensure adequate water supply to combat heat stress`);
+            }
+            
+            // Fertilizer optimization
+            if (fertilizer < 100) {
+                tips.push(`Increase fertilizer application. ${crop} responds well to balanced nutrition (recommended: 150-200kg/ha)`);
+            } else if (fertilizer > 300) {
+                tips.push(`Reduce fertilizer usage to prevent nutrient runoff and environmental damage`);
+            }
+            
+            // Soil optimization
+            if (data.soilType === 'sandy') {
+                tips.push(`Add organic matter to improve water retention in sandy soil`);
+            } else if (data.soilType === 'clay') {
+                tips.push(`Improve drainage and aeration in clay soil through tilling and organic amendments`);
+            }
+            
+            // General tips
+            tips.push(`Rotate crops annually to maintain soil health and prevent pest buildup`);
+            tips.push(`Monitor soil pH regularly and adjust as needed for optimal ${crop} growth`);
+            tips.push(`Consider precision agriculture technologies for more efficient resource utilization`);
+            
+            return tips.slice(0, 5);
+        }
+    </script>
+</body>
+</html>
